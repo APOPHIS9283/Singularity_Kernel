@@ -124,6 +124,9 @@ struct schedtune {
 	bool top_task_filter;
 	bool ed_task_filter;
 #endif
+
+	/* Task will be scheduled on the CPU with the highest spare capacity */
+	int crucial;
 };
 
 static inline struct schedtune *css_st(struct cgroup_subsys_state *css)
@@ -168,6 +171,7 @@ root_schedtune = {
 	.ed_task_filter = false,
 #endif
 	.prefer_idle = 0,
+	.crucial = 0,
 };
 
 /*
@@ -596,6 +600,23 @@ int schedtune_prefer_idle(struct task_struct *p)
 	return prefer_idle;
 }
 
+int schedtune_crucial(struct task_struct *p)
+{
+	struct schedtune *st;
+	int crucial;
+
+	if (unlikely(!schedtune_initialized))
+		return 0;
+
+	/* Get crucial value */
+	rcu_read_lock();
+	st = task_schedtune(p);
+	crucial = st->crucial;
+	rcu_read_unlock();
+
+	return crucial;
+}
+
 static u64
 prefer_idle_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
@@ -610,6 +631,24 @@ prefer_idle_write(struct cgroup_subsys_state *css, struct cftype *cft,
 {
 	struct schedtune *st = css_st(css);
 	st->prefer_idle = !!prefer_idle;
+
+	return 0;
+}
+
+static u64
+crucial_read(struct cgroup_subsys_state *css, struct cftype *cft)
+{
+	struct schedtune *st = css_st(css);
+
+	return st->crucial;
+}
+
+static int
+crucial_write(struct cgroup_subsys_state *css, struct cftype *cft,
+	    u64 crucial)
+{
+	struct schedtune *st = css_st(css);
+	st->crucial = !!crucial;
 
 	return 0;
 }
@@ -884,6 +923,11 @@ static struct cftype files[] = {
 		.write_u64 = ed_task_filter_write,
 	},
 #endif /* OPLUS_FEATURE_POWER_EFFICIENCY */
+	{
+		.name = "crucial",
+		.read_u64 = crucial_read,
+		.write_u64 = crucial_write,
+	},
 	{ }	/* terminate */
 };
 

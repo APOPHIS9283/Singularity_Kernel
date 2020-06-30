@@ -14,6 +14,7 @@ struct target_nrg {
 
 int schedtune_cpu_boost_with(int cpu, struct task_struct *p);
 int schedtune_task_boost(struct task_struct *tsk);
+int schedtune_crucial(struct task_struct *tsk);
 
 int schedtune_prefer_idle(struct task_struct *tsk);
 
@@ -31,6 +32,7 @@ unsigned int uclamp_ed_task_filter(struct task_struct *p);
 
 #define schedtune_cpu_boost_with(cpu, p)  0
 #define schedtune_task_boost(tsk) 0
+#define schedtune_crucial(tsk)    0
 
 #define schedtune_prefer_idle(tsk) 0
 
